@@ -1,0 +1,5 @@
+{
+  "name": "mini-battlecode-deployment",
+  "private": true,
+  "packageManager": "pnpm@11.25.0"
+}

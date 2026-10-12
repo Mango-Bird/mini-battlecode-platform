@@ -1,1 +1,15 @@
-{"framework":"vite","buildCommand":"pnpm build","outputDirectory":"dist","installCommand":"pnpm install --frozen-lockfile","rewrites":[{"source":"/(.*)","destination":"/index.html"}],"headers":[{"source":"/(.*)","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"no-referrer"},{"key":"X-Frame-Options","value":"DENY"}]}]}
+{
+  "framework": "vite",
+  "buildCommand": "corepack pnpm build",
+  "outputDirectory": "dist",
+  "installCommand": "corepack pnpm --version && corepack pnpm install --frozen-lockfile",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "headers": [{
+    "source": "/(.*)",
+    "headers": [
+      { "key": "X-Content-Type-Options", "value": "nosniff" },
+      { "key": "Referrer-Policy", "value": "no-referrer" },
+      { "key": "X-Frame-Options", "value": "DENY" }
+    ]
+  }]
+}
