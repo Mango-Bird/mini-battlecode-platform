@@ -1,0 +1,8 @@
+**/target/
+.idea/
+*.iml
+.vscode/
+.maven-repository/
+*.log
+**/.env*
+!**/.env.example
