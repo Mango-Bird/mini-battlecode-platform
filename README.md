@@ -1,5 +1,26 @@
 # Mini Battlecode Platform — Phase 7: Web Multiplayer
 
+## Phase 8C — JavaScript bots local
+
+Prototype chạy hai bot JavaScript thật bằng QuickJS process mới mỗi lượt, qua Engine/MatchManager hiện tại. Chỉ cho phép các fixture được review và khóa hash; arbitrary source bị từ chối. Đây chưa phải secure sandbox: chưa có AppContainer/Job Objects, CPU quota hoặc total-process RAM cap.
+
+```powershell
+.\scripts\setup-quickjs.ps1
+mvn clean test
+mvn package
+.\scripts\run-local-bots.ps1
+```
+
+Profile `local-bots` tự bật trên Windows, gồm `bot-runner` và `bot-match`; Linux server/Render không phụ thuộc executor này. Không skip real-JS tests khi thiếu runtime.287 tests PASS (244 cũ +43 mới), clean test/package BUILD SUCCESS; demo hòa sau200 nước và replay khớp. Xem [báo cáo Phase 8C](docs/phase8c-report.md) cho kết quả, giới hạn thực tế và cách chạy.
+
+## Phase 8B — OTT board engine và Bot API
+
+Đã thêm trusted rule `ott-board-9x9-v1`: board9x9, A/B, mỗi bên2 ROCK/2 PAPER/2 SCISSORS, đi1 ô theo8 hướng và bắt theo RPS. Initial board/goal cố định theo [contract](docs/phase8a-technical-contract.md). Rule dùng chung Engine và TCP/web-1 hiện có. BotObservation/BotAction immutable là contract cho runner tương lai, chưa có JavaScript execution hoặc board viewer.
+
+CLI tạo phòng bằng `create_room ott-board-9x9-v1 2 200 1000`, người thứ hai join rồi host start. Lấy matchId và **envelope turn** từ MATCH_EVENT; A đi đầu với `action <matchId> 0 pieceId=A-S2 to.row=2 to.col=2`, tiếp theo B dùng turn1. View.playerId là A/B, view.turn bắt đầu1; không dùng view.turn làm expectedTurn. maxTurns phải>=200, không options. Nước sai ở active turn/timeout dẫn đến FORFEIT, không retry; request ngoài lượt/stale vẫn lỗi cũ.
+
+Trạng thái và history tối đa200 validated moves ở bộ nhớ, replay từ fixed initial board. Không persistent history/API mới; React hiện chỉ có UI RPS và Number Guessing. [Thiết kế Phase8B](docs/phase8b-design.md) và [báo cáo/tests](docs/phase8b-report.md). Không tự deploy hoặc làm Phase8C.
+
 Java 21, Maven multi-module và TCP Socket thuần Java, bổ sung WebSocket gateway Jetty và frontend React/TypeScript. TCP CLI, bot và browser dùng chung lobby/room, game engine và hai production game: `rock-paper-scissors`, `number-guessing`. Không Spring Boot hoặc database.
 
 ## Chạy web multiplayer
@@ -241,3 +262,74 @@ Session được server sinh sau HELLO và gắn socket; không account auth/JWT
 ## Phase 7D — chuẩn bị deploy miễn phí
 
 WEB_ONLY chỉ mở HTTP/WebSocket trên `0.0.0.0:$PORT`, dùng chung services hiện có; LOCAL giữ TCP + WS. Docker Java 21 có giới hạn heap và frontend production build yêu cầu WSS URL rõ ràng. Xem [hướng dẫn Render/Vercel](docs/free-deployment.md) và [báo cáo Phase 7D](docs/phase7d-report.md). Chưa push, build Docker image hoặc deploy tài khoản người dùng.
+
+## Local Web Bot Arena (Phase 8D)
+
+Windows / Java 21 / trusted QuickJS fixtures only. Build with `mvn -Plocal-bots -pl bot-match -am package`, then run `.\scripts\run-local-arena.ps1` from the repository root. In `frontend`, run `pnpm exec vite --host 127.0.0.1 --port 5173 --strictPort` and open http://127.0.0.1:5173/bot-arena. Default local API is 127.0.0.1:8090; optional `VITE_BOT_API_URL` overrides it for development.
+
+See [Phase 8D report](docs/phase8d-report.md) for exact PowerShell commands, API contract, replay, bounds and verification. Bot Arena is disabled in production builds and is absent from Render WEB_ONLY. No source uploads are accepted.
+
+## Local Bot Workspace (Phase 8E)
+
+Open http://127.0.0.1:5173/bot-workspace using the same local arena backend/frontend commands above. Create, rename, edit, save, duplicate and delete JavaScript bots; view immutable versions/hash and validate saved source metadata. Source is limited to 32KiB UTF-8 and stored in memory only (lost on restart).
+
+User bots are NOT EXECUTABLE. Static parsing/runtime verification are not performed; Phase 8C.5 sandbox hardening is required before execution. Arena shows user bots without silently replacing them, while the two trusted fixtures still run normally. See [Phase 8E report](docs/phase8e-report.md) for endpoints, concurrency limits, tests and PowerShell PATH fallback when pnpm/node are missing.
+
+## Secure local saved bot battles (Phase 8F)
+
+Use the separate secure local entrypoint for saved user bots: run `scripts/build-isolated-worker.ps1`, build `mvn -Plocal-bots -pl bot-match -am package`, then run `scripts/run-secure-local-arena.ps1` with your Python/Docker executable paths. Docker Desktop must provide a running Linux WSL2 engine with cgroups v2. Every startup runs real kernel/resource probes; saved bots remain NOT_EXECUTABLE if any mandatory control fails. The earlier `run-local-arena.ps1` remains fixture-only.
+
+Workspace source reads/edits are scoped to a server-issued browser identity. Arena chooses exact saved version/hash and runs both sides with identical OS isolation, while preserving backend live state/replay. No user source is passed to the Windows trusted-fixture prototype or a production server. [Phase 8F report](docs/phase8f-report.md) contains exact PowerShell commands (including the node/pnpm PATH fix), resource evidence, tests and operational limits.
+
+## Local Tournaments (Phase 9)
+
+Run the existing `scripts/run-secure-local-arena.ps1` backend and local Vite frontend, then open http://127.0.0.1:5173/tournaments. Create Round Robin or Single Elimination, open registration, and let each local workspace owner register an exact saved bot version. The tournament owner closes registration and starts; standings, bracket, match viewer and replay come from the existing backend engine.
+
+Tournament scheduling shares the single Arena/verified-worker admission slot with manual battles. Sources stay private; infrastructure interruption stops scheduling without awarding a loss. Four tournaments, 2–16 entrants, bounded histories and in-memory storage only. [Phase 9 report](docs/phase9-report.md) documents exact PowerShell commands, API/idempotency, published DRAW/tie-break policies, resource limits and actual tests. No public hosting or production TCP/web-1 change.
+
+## Accounts and persistence (Phase 10 — current secure local mode)
+
+The secure local entrypoint now requires PostgreSQL 17 configuration. Earlier Phase 8/9 RAM/token descriptions are historical. Use `compose.local.yml` with a private root `.env` copied from `.env.example`, replace the example password, then run `scripts/run-persistent-local-arena.ps1`. It imports the DB environment and starts the existing Arena/worker/backend; the fixture-only entrypoint remains unchanged.
+
+Register at http://127.0.0.1:5173/register, then /login. Bot Workspace and tournament management require accounts. HttpOnly cookie sessions, exact immutable bot versions, tournament schedules/results/replay and manual Arena history persist in PostgreSQL. Restart cancels lost executions without awarding winners or automatically replaying them. Keep frontend and API on **127.0.0.1** for cookie authentication.
+
+See [Phase 10 report](docs/phase10-report.md) for exact PowerShell setup/run/test commands, endpoints, migrations, ownership, transaction/recovery policy and lifetime storage caps. No Internet deployment or production protocol/deployment changes.
+
+## Frontend platform redesign (Phase 10.5)
+
+The home route is now the platform landing page. Use `/games`, `/docs`, `/login` and `/register` for public pages. After signing in, `/dashboard`, `/my-bots`, `/bot-workspace`, `/bot-arena`, `/my-tournaments`, `/match-history` and `/account` share the player shell. Tournament detail is `/tournaments/{id}`; original WebSocket multiplayer is preserved at `/multiplayer`.
+
+Dashboard data, source versions, board replay, standings and results come from existing APIs. Organizer controls require backend `canManage` and matching owner identity. Public tournament listing requires login because the current backend does. Match History is explicitly shared local arena history; no fake rankings or player statistics.
+
+Start the unchanged persistent local backend as described above, then start Vite on loopback. If PowerShell cannot find node/pnpm:
+
+```powershell
+$runtimeRoot = 'C:\Users\Admin\.cache\codex-runtimes\codex-primary-runtime\dependencies'
+$env:Path = "$runtimeRoot\node\bin;$runtimeRoot\bin\fallback;$env:Path"
+Set-Location D:\Socket\BattleCode\frontend
+pnpm.cmd exec vite --host 127.0.0.1 --port 5173 --strictPort
+```
+
+Open `http://127.0.0.1:5173/`. Use 127.0.0.1 for frontend/API cookie authentication. Unsaved editor drafts warn on navigation and remain private in tab memory across session expiry; sign back into the same account before reloading. No source or session token is stored in browser storage. Saved versions remain PostgreSQL-backed; closing/reloading the tab loses unsaved drafts.
+
+[Phase 10.5 report](docs/phase10-5-report.md) documents architecture, routes, components, actual **46 passing frontend tests**, TypeScript/Vite build, real browser/backend verification, screenshots and remaining limitations. Production/local-only boundaries and deployment configuration are unchanged.
+
+## Phase 10.8 — Ranked matchmaking (local only)
+
+Open `/ranked` in the existing authenticated local frontend. Select an owned saved bot and join the queue; the verified worker gate is mandatory. Each pairing plays two games with swapped sides, each confirmed game has its own Elo/Glicko ledger event. Search can be cancelled before reservation. Recent owner-pair cooldown is 24 hours; search expires after 10 minutes. Arena fixtures/custom direct matches remain Unranked.
+
+Use the existing PostgreSQL + secure worker setup and `scripts/run-persistent-local-arena.ps1`; Flyway adds V5 automatically. Do not expose this application to the Internet. Details, state machine, API requests, actual test results and exact PowerShell commands: [Phase 10.8 report](docs/phase10-8-report.md).
+
+## Phase 11A — Production readiness preparation
+
+Online competitive execution remains **BLOCKED**. Existing WEB_ONLY Docker serves room multiplayer, not the authenticated competitive bot platform. Local competitive HTTP now also rejects `BATTLECODE_ENV=staging/production` (unknown or blank values reject); omitted environment retains local-only compatibility.
+
+[Architecture](docs/production-architecture.md), [threat model](docs/production-threat-model.md), [readiness checklist](docs/production-readiness-checklist.md), [hosting assessment](docs/deployment-options.md) and [Phase11A results](docs/phase11a-report.md) separate verified local behavior from missing production controls. Phase11A `config/local.env.example`, `staging.env.example` and `production.env.example` are offline policy templates. `ProductionPreflight.validate(Map)` checks declarations only; `requireOnlineRuntime` always refuses. No full competitive production runtime was enabled.
+
+## Phase 11B.1 — Execution-disabled cloud staging
+
+Separate `staging-web` runtime supports accounts, owned bot source/version CRUD and authorized read-only rankings/history/replay. It has no Arena, Ranked queue, Tournament execution or worker. Existing local competitive and legacy WEB_ONLY deployments remain independent.
+
+Build: `mvn -P local-bots,safe-staging package`. Deployment artifacts: `Dockerfile.staging`, `render.staging.yaml`, `frontend/vercel.staging.json` and `config/safe-staging.env.example`. Browser authentication uses a same-origin Vercel BFF with Secure/HttpOnly cookies and CSRF; secrets stay server-side. Neon uses verified TLS and a restricted runtime role; Flyway runs separately.
+
+[Operator deployment/smoke commands](docs/free-cloud-deployment-guide.md), [architecture](docs/free-cloud-staging-architecture.md), [security checklist](docs/staging-security-checklist.md), [actual verification and limits](docs/phase11b1-report.md). Cloud deployment and HTTPS browser E2E remain NOT TESTED. Do not infer permission to execute user bots or deploy from local build success.

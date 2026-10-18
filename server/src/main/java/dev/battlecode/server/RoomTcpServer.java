@@ -26,7 +26,7 @@ public final class RoomTcpServer implements TcpServer {
 
     public RoomTcpServer(NetworkConfig config) {
         this(config, new InMemoryRuleRegistry(List.of(
-                new RoomOnlyRule(), new RockPaperScissorsRule(), new NumberGuessingRule())));
+                new RoomOnlyRule(), new RockPaperScissorsRule(), new NumberGuessingRule(), new dev.battlecode.rulesimpl.OttBoardRule())));
     }
     public RoomTcpServer(NetworkConfig config, RuleRegistry registry) {
         this(config, registry, null);

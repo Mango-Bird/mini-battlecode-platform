@@ -1,5 +1,9 @@
 # Kế hoạch triển khai
 
+## Phase 8B — board domain và Bot API (phạm vi mới được giao)
+
+OTT board9x9 theo Phase8A v1.0: immutable state, deterministic legal moves/capture/outcome, rule tích hợp engine hiện có, bot-1 DTO và replay history. Đã được xác nhận phân biệt invalid BotAction FORFEIT với lỗi request giữ ERROR. Không đổi public contracts/protocol/deployment hoặc behavior luật cũ. Chi tiết thực hiện và xác minh tại [phase8b-report.md](phase8b-report.md). Phase8C JavaScript runner/sandbox/code submission/tournament/board viewer chưa được triển khai; chỉ làm khi có yêu cầu tiếp theo.
+
 Phạm vi cập nhật theo yêu cầu người dùng: Phase 1 contracts, Phase 2 TCP runtime, Phase 3 session/lobby/room, Phase 4 generic GameEngine/Match lifecycle, Phase 5 production rules. Những mục bên dưới là kế hoạch ban đầu được giữ để tham khảo; không phải chỉ thị cho các phase đã hoàn thành. Báo cáo từng phase ghi phạm vi nghiệm thu thực tế.
 
 ## Phase 1 — hoàn thành bộ khung

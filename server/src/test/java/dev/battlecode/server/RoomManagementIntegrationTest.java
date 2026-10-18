@@ -191,8 +191,8 @@ class RoomManagementIntegrationTest {
     }
     @Test void realRuleRegistryAndConfigValidationAreUsed() throws Exception {
         var client = client(); var rules = client.request(Command.LIST_RULES, Map.of());
-        assertEquals("3", rules.payload().get("count"));
-        assertEquals(Set.of(RoomOnlyRule.ID,RockPaperScissorsRule.ID,NumberGuessingRule.ID),
+        assertEquals("4", rules.payload().get("count"));
+        assertEquals(Set.of(RoomOnlyRule.ID,RockPaperScissorsRule.ID,NumberGuessingRule.ID,dev.battlecode.rulesimpl.OttBoardRule.ID),
                 rules.payload().entrySet().stream().filter(entry->entry.getKey().matches("rule\\.\\d+\\.id"))
                         .map(Map.Entry::getValue).collect(java.util.stream.Collectors.toSet()));
         assertEquals(ErrorCode.INVALID_PAYLOAD, client.request(Command.CREATE_ROOM, Map.of("ruleId", RoomOnlyRule.ID, "maxPlayers", "2", "maxTurns", "10", "turnTimeoutMillis", "1000", "option.unknown", "bad")).errorCode());

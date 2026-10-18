@@ -15,7 +15,7 @@ public final class ServerMain {
         var stopped = new CountDownLatch(1);
         WebSocketConfig web = launch.web();
         try (var server = new RoomTcpServer(config, new dev.battlecode.rulesapi.InMemoryRuleRegistry(java.util.List.of(
-                new dev.battlecode.rulesimpl.RoomOnlyRule(), new dev.battlecode.rulesimpl.RockPaperScissorsRule(), new dev.battlecode.rulesimpl.NumberGuessingRule())), web, launch.mode())) {
+                new dev.battlecode.rulesimpl.RoomOnlyRule(), new dev.battlecode.rulesimpl.RockPaperScissorsRule(), new dev.battlecode.rulesimpl.NumberGuessingRule(), new dev.battlecode.rulesimpl.OttBoardRule())), web, launch.mode())) {
             Thread hook = new Thread(() -> {
                 try { server.close(); }
                 catch (Exception ex) { System.err.println("Shutdown: " + ex.getMessage()); }
@@ -27,7 +27,7 @@ public final class ServerMain {
             if (launch.mode() == ServerMode.LOCAL) System.out.printf("Mini Battlecode TCP 1.0 listening on %s:%d%n", config.bindAddress(), server.localPort());
             if (web != null) System.out.printf("WebSocket /ws and HTTP /health on %s:%d%n", web.bindAddress(), server.websocketPort());
             System.out.println("Press Ctrl+C to stop.");
-            System.out.println("Production rules: room-only-no-gameplay, rock-paper-scissors, number-guessing.");
+            System.out.println("Production rules: room-only-no-gameplay, rock-paper-scissors, number-guessing, ott-board-9x9-v1.");
             try { stopped.await(); }
             finally {
                 try { Runtime.getRuntime().removeShutdownHook(hook); }

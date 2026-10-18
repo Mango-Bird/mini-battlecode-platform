@@ -1,0 +1,21 @@
+# Deployment feasibility — Phase 11A
+
+Official documentation checked 2026-10-16. No service was created, account connected or deployment performed. Costs are categories, not guessed current prices. This is a topology feasibility assessment; provider-specific worker isolation remains unverified.
+
+| Option | Feasibility and isolation | Scaling/operations | Cost categories / constraints |
+|---|---|---|---|
+| Vercel static frontend | Existing Vite build can be hosted. Competitive routes currently DEV-only; need reviewed production API adapter and custom HTTPS domains first | CDN frontend scales independently; no bot execution here | Plan/domain/egress; Hobby is personal non-commercial and quota-bound |
+| Render existing Docker WEB_ONLY | Supports current room HTTP/WebSocket server graph; it does not contain competitive auth/Postgres/runner runtime | Single public HTTP/WS port; current health is not competitive readiness | Free demo has spin-down/cold start/ephemeral storage; not continuous competitive service |
+| Paid Java API + managed PostgreSQL + dedicated Linux worker | Recommended target after Phase11B implementation and staging acceptance | Initially one entire competitive app writer/coordinator. Separate private authenticated worker, later durable claims/read replicas | API compute, DB/storage/PITR, isolated worker capacity, private traffic, backups, domain, monitoring and operator time |
+| Single VPS with API+Postgres+Docker worker | Cheap local demo topology, rejected as default production trust boundary | Shared kernel and Docker supervisor authority expand blast radius; all ops on owner | VM/storage/backups/patches; low sticker cost is not isolation evidence |
+| Separate worker VPS with microVM or gVisor service | Conditional candidate; provider must support required virtualization/runtime/security controls | Network policy/mTLS, image rollout, per-job cleanup, heartbeats and bounded queue must be implemented/tested | Dedicated host/VM capacity, snapshots/images/egress/security maintenance |
+
+[Vercel Hobby](https://vercel.com/docs/plans/hobby) is limited to personal non-commercial use. Confirm project eligibility and usage limits before launch; paid use does not solve backend security.
+
+[Render Free](https://render.com/docs/free) web services idle after15minutes and may take about a minute to restart; their filesystem is ephemeral and they cannot attach persistent disks. Free Postgres has1GB storage and expires after30days (followed by a grace period), making it unsuitable as the permanent source of truth here. State in PostgreSQL survives API process restart only while its database exists. Free service operation is not an uptime commitment. Do not use an expiring database as a backup strategy.
+
+Do not assume Free Render offers the privileges, KVM, custom kernel, gVisor runtime or dedicated isolation required by the worker. No such capability was verified. Keep worker on separate infrastructure; private connectivity/mTLS and network ACL feasibility must be confirmed between the selected regions/providers. HTTPS alone does not authenticate a worker identity. Standard Docker is not an escape-proof sandbox. [gVisor architecture](https://gvisor.dev/docs/) adds a separate userspace-kernel boundary; choosing it still requires a deployment-specific review.
+
+Recommended rollout: staging custom app/API domains + managed TLS PostgreSQL + dedicated isolated Linux worker; production infrastructure mirrors staging. Runtime role and migrator separate, CA validation enforced. Vercel frontend accesses API through same-site HTTPS subdomains (credentials+CSRF), not an unreviewed cross-site-cookie dependency. Public API has no Docker daemon and no JavaScript executor. Worker guest has no outbound Internet, database/session secrets or service control credentials.
+
+Phase11B gates before considering deployment: implement production transport/auth/config adapter; deploy private staging only when authorized; prove isolation and worker authentication on that host; execute TLS/cookie/CSRF/IDOR/crash/backup tests; measure budgets/load, then release review. Multi-replica competitive API is a later migration, not achieved by setting replica count. No production environment file or new Docker entrypoint in11A enables this topology.

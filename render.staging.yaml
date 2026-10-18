@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: mini-battlecode-safe-staging
+    runtime: docker
+    plan: free
+    numInstances: 1
+    dockerfilePath: ./Dockerfile.staging
+    healthCheckPath: /healthz
+    autoDeployTrigger: "off"
+    envVars:
+      - key: BATTLECODE_ENV
+        value: staging
+      - key: BATTLECODE_MODE
+        value: SAFE_STAGING_WEB_ONLY
+      - key: BATTLECODE_EXECUTION
+        value: disabled
+      - key: STAGING_FRONTEND_ORIGIN
+        sync: false
+      - key: STAGING_BACKEND_ORIGIN
+        sync: false
+      - key: STAGING_PROXY_SECRET
+        sync: false
+      - key: STAGING_CSRF_SECRET
+        sync: false
+      - key: BATTLECODE_DB_URL
+        sync: false
+      - key: BATTLECODE_DB_USER
+        sync: false
+      - key: BATTLECODE_DB_PASSWORD
+        sync: false

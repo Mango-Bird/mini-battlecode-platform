@@ -76,12 +76,25 @@ class WebOnlyDeploymentIntegrationTest {
         assertTrue(server.lobby().rooms().isEmpty());assertTrue(server.isTerminated());
     }
     void assertStopped(WebMultiplayerIntegrationTest.Peer a,WebMultiplayerIntegrationTest.Peer b) throws Exception {
-        // Abrupt transport closure can surface as EOF/error rather than onClose in JDK HttpClient.
-        assertThrows(Exception.class,()->a.request("PING",Map.of()));
-        assertThrows(Exception.class,()->b.request("PING",Map.of()));
+        // JDK may defer close/error after abrupt disconnect or complete send into its local buffer.
+        // Test the required behavior directly: no response to PING, listener port gone, no server resources.
+        assertNoPingResponse(a);
+        assertNoPingResponse(b);
         assertThrows(java.io.IOException.class,()->http.send(HttpRequest.newBuilder(uri("/health"))
             .timeout(Duration.ofSeconds(2)).GET().build(),HttpResponse.BodyHandlers.ofString()));
         assertTrue(server.isTerminated());assertEquals(0,server.sessionCount());assertEquals(0,server.connectionCount());
+    }
+    void assertNoPingResponse(WebMultiplayerIntegrationTest.Peer peer) throws Exception {
+        String id="after-shutdown-"+UUID.randomUUID();
+        String text=WebMultiplayerIntegrationTest.JSON.writeValueAsString(Map.of("requestId",id,"command","PING","payload",Map.of()));
+        try {peer.ws.sendText(text,true).get(2,TimeUnit.SECONDS);}
+        catch(ExecutionException | IllegalStateException expectedClosedTransport) {return;}
+        long until=System.nanoTime()+TimeUnit.MILLISECONDS.toNanos(500);
+        while(System.nanoTime()<until) {
+            var message=peer.messages.poll(Math.max(1,until-System.nanoTime()),TimeUnit.NANOSECONDS);
+            if(message==null)break;
+            assertNotEquals(id,message.path("requestId").asText(),"Stopped server must not answer PING");
+        }
     }
     String create(WebMultiplayerIntegrationTest.Peer a,String rule,Map<String,String> options) throws Exception {
         var p=new HashMap<String,String>(Map.of("ruleId",rule,"maxPlayers","2","maxTurns","20","turnTimeoutMillis","3000"));p.putAll(options);

@@ -2,6 +2,12 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.battlecode</groupId><artifactId>mini-battlecode</artifactId><version>1.0.0-SNAPSHOT</version><packaging>pom</packaging>
   <modules><module>rules-api</module><module>protocol</module><module>engine</module><module>competition</module><module>network</module><module>rules-impl</module><module>client</module><module>server</module></modules>
+  <!-- Local trusted-fixture prototype stays outside the Render/server dependency graph. -->
+  <profiles><profile><id>local-bots</id><activation><os><family>Windows</family></os></activation>
+    <modules><module>bot-runner</module><module>bot-match</module></modules>
+  </profile><profile><id>safe-staging</id>
+    <modules><module>staging-web</module></modules>
+  </profile></profiles>
   <properties><maven.compiler.release>21</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding><junit.version>5.11.4</junit.version></properties>
   <dependencyManagement><dependencies><dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><version>${junit.version}</version><scope>test</scope></dependency></dependencies></dependencyManagement>
   <build><plugins>

@@ -1,0 +1,13 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+ <modelVersion>4.0.0</modelVersion>
+ <parent><groupId>dev.battlecode</groupId><artifactId>mini-battlecode</artifactId><version>1.0.0-SNAPSHOT</version></parent>
+ <artifactId>staging-web</artifactId>
+ <dependencyManagement><dependencies><dependency><groupId>com.fasterxml.jackson</groupId><artifactId>jackson-bom</artifactId><version>2.22.0</version><type>pom</type><scope>import</scope></dependency></dependencies></dependencyManagement>
+ <dependencies>
+  <dependency><groupId>dev.battlecode</groupId><artifactId>bot-match</artifactId><version>${project.version}</version></dependency>
+  <dependency><groupId>com.zaxxer</groupId><artifactId>HikariCP</artifactId><version>7.0.2</version></dependency>
+  <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-nop</artifactId><version>2.0.17</version></dependency>
+  <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
+ </dependencies>
+ <build><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.8.1</version><executions><execution><id>staging-libs</id><phase>package</phase><goals><goal>copy-dependencies</goal></goals><configuration><includeScope>runtime</includeScope></configuration></execution></executions></plugin></plugins></build>
+</project>

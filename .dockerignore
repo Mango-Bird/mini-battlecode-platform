@@ -4,6 +4,7 @@
 .agents
 .aws
 .maven-repository
+.tools
 **/target
 **/node_modules
 **/dist

@@ -1,0 +1,25 @@
+FROM maven:3.10.0-eclipse-temurin-21-noble AS build
+WORKDIR /build
+COPY pom.xml ./
+COPY .mvn/maven.config .mvn/maven.config
+COPY rules-api/ rules-api/
+COPY protocol/ protocol/
+COPY engine/ engine/
+COPY competition/ competition/
+COPY network/ network/
+COPY rules-impl/ rules-impl/
+COPY client/ client/
+COPY server/ server/
+COPY bot-runner/ bot-runner/
+COPY bot-match/ bot-match/
+COPY staging-web/ staging-web/
+RUN mvn -B -P local-bots,safe-staging -pl staging-web -am package -DskipTests
+FROM eclipse-temurin:21-jre-jammy
+WORKDIR /app
+RUN groupadd --gid 10001 battlecode && useradd --uid 10001 --gid 10001 --no-create-home battlecode
+COPY --from=build --chown=10001:10001 /build/staging-web/target/staging-web-1.0.0-SNAPSHOT.jar /app/staging.jar
+COPY --from=build --chown=10001:10001 /build/staging-web/target/dependency/ /app/lib/
+ENV JAVA_TOOL_OPTIONS="-Xms24m -Xmx128m -XX:MaxMetaspaceSize=96m -XX:MaxDirectMemorySize=16m -XX:ReservedCodeCacheSize=32m -Xss512k -XX:+UseSerialGC -XX:ActiveProcessorCount=1 -XX:+ExitOnOutOfMemoryError"
+USER 10001:10001
+# No worker, Python, QuickJS executable, Docker client/socket, env files or credentials copied.
+ENTRYPOINT ["java","-cp","/app/staging.jar:/app/lib/*","dev.battlecode.staging.StagingMain"]

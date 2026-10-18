@@ -74,7 +74,7 @@ class ProductionGameRulesIntegrationTest {
         throw new AssertionError("Missing event "+type);
     }
 
-    @Test void defaultProductionCompositionListsAllThreeRules() throws Exception {
+    @Test void defaultProductionCompositionListsAllRegisteredRules() throws Exception {
         var defaults=new RoomTcpServer(new NetworkConfig("127.0.0.1",0,8,2000,5000,1000));
         try {
             defaults.start();
@@ -82,7 +82,7 @@ class ProductionGameRulesIntegrationTest {
                 client.connect("127.0.0.1",defaults.localPort());
                 assertEquals(Command.ACK,client.hello("Rule-list").command());
                 var response=client.request(Command.LIST_RULES,Map.of());
-                assertEquals(Set.of("room-only-no-gameplay","rock-paper-scissors","number-guessing"),
+                assertEquals(Set.of("room-only-no-gameplay","rock-paper-scissors","number-guessing","ott-board-9x9-v1"),
                         response.payload().entrySet().stream().filter(entry->entry.getKey().matches("rule\\.\\d+\\.id"))
                                 .map(Map.Entry::getValue).collect(java.util.stream.Collectors.toSet()));
             }

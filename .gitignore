@@ -4,5 +4,7 @@
 .vscode/
 .maven-repository/
 *.log
+.tools/
+**/.vercel/
 **/.env*
 !**/.env.example

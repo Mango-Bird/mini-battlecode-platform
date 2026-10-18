@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${BATTLECODE_DB_NAME:?Set BATTLECODE_DB_NAME}
+      POSTGRES_USER: ${BATTLECODE_DB_USER:?Set BATTLECODE_DB_USER}
+      POSTGRES_PASSWORD: ${BATTLECODE_DB_PASSWORD:?Set BATTLECODE_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - battlecode-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  battlecode-postgres:
