@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
-import { createHandler } from '../api/staging/[...path].mjs';
+import { createHandler } from '../api/staging-bff.mjs';
 const env={STAGING_BFF_MODE:'SAFE_STAGING_WEB_ONLY',STAGING_BACKEND_ORIGIN:'https://stage.onrender.com',STAGING_FRONTEND_ORIGIN:'https://stage.vercel.app',STAGING_PROXY_SECRET:'a0b1c2d3e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1'};
 async function request(path,method='GET',headers={},body='',fetcher=async()=>new Response('{}')){
  const req=Readable.from([body]);Object.assign(req,{url:'/api/staging/'+path,method,headers:{host:'stage.vercel.app',...headers}});

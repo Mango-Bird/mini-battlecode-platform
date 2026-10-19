@@ -13,6 +13,36 @@ function configuration(env) {
   if (!secret || !/^[A-Za-z0-9_-]{43,128}$/.test(secret) || new Set(secret).size < 12 || /(replace|example|password|change)/i.test(secret)) throw new Error('Configuration');
   return { backend, frontend, secret };
 }
+// Vercel rewrites target a static function. Accept both the original public URL
+// and the rewritten URL; never forward internal routing parameters to Render.
+function target(req, origin) {
+  const input = new URL(req.url, origin);
+  const prefix = '/api/staging/';
+  const original = input.pathname.startsWith(prefix) ? input.pathname.slice(prefix.length) : null;
+  if (original === null && input.pathname !== '/api/staging-bff') return { error:404 };
+  const mapped = input.searchParams.getAll('__staging_path');
+  const metadata = req.query?.__staging_path;
+  if (mapped.length > 1 || (metadata !== undefined && typeof metadata !== 'string')) return { error:400 };
+  if (mapped.length && metadata !== undefined && mapped[0] !== metadata) return { error:400 };
+  const routed = mapped.length ? mapped[0] : metadata;
+  if (routed !== undefined && original !== null && routed !== original) return { error:400 };
+  const path = original ?? routed;
+  if (!path || path.includes('%') || path.includes('//') || path.includes('\\') || input.pathname.includes('%')) return { error:404 };
+
+  // Keep the public query verbatim. Validate before any URLSearchParams
+  // normalization, so encoded keys, duplicate page and extra fields still fail.
+  const pairs = input.search ? input.search.slice(1).split('&') : [];
+  const publicPairs = pairs.filter(pair => pair.split('=',1)[0] !== '__staging_path');
+  let query = publicPairs.length ? '?' + publicPairs.join('&') : '';
+  for (const [key,value] of Object.entries(req.query ?? {})) {
+    if (key === '__staging_path') continue;
+    if (key !== 'page' || typeof value !== 'string') return { error:400 };
+    if (query && (input.searchParams.getAll('page').length !== 1 || input.searchParams.get('page') !== value)) return { error:400 };
+    if (!query) query = '?page=' + encodeURIComponent(value);
+  }
+  if (query && !(path === 'match-history' && /^\?page=(0|[1-9][0-9]{0,2})$/.test(query) && Number(query.slice(6)) <= 200)) return { error:400 };
+  return { path, query };
+}
 // Injectable transport for tests. Deployed entrypoint always uses process.env and native fetch.
 export function createHandler(env, fetcher = fetch) {
   return async (req, res) => {
@@ -22,11 +52,10 @@ export function createHandler(env, fetcher = fetch) {
       const { backend, frontend, secret } = configuration(env);
       if (req.headers.host !== frontend.host || (req.headers.origin && req.headers.origin !== frontend.origin)) return fail(403,'Request denied');
       if (req.method !== 'GET' && req.headers.origin !== frontend.origin) return fail(403,'Origin required');
-      const input = new URL(req.url, frontend.origin);
-      if (!input.pathname.startsWith('/api/staging/') || input.pathname.includes('%') || input.pathname.includes('//')) return fail(404,'Not found');
-      const path = input.pathname.slice('/api/staging/'.length);
+      const resolved = target(req,frontend.origin);
+      if (resolved.error) return fail(resolved.error,resolved.error === 404 ? 'Not found' : 'Invalid query');
+      const { path, query } = resolved;
       if (!allowed(req.method,path)) return fail(404,'Not found');
-      if (input.search && !(path === 'match-history' && /^\?page=(0|[1-9][0-9]{0,2})$/.test(input.search) && Number(input.searchParams.get('page')) <= 200)) return fail(400,'Invalid query');
       const headers = { Origin:frontend.origin, 'X-Staging-Proxy-Key':secret, 'X-Staging-Proto':'https' };
       // Vercel owns this platform header. Browser X-Forwarded-For is never used.
       const client = String(req.headers['x-vercel-forwarded-for'] ?? 'unknown').slice(0,128);
@@ -40,7 +69,7 @@ export function createHandler(env, fetcher = fetch) {
         for await (const chunk of req) { size+=Buffer.byteLength(chunk);if(size>200000)return fail(413,'Request too large');chunks.push(Buffer.from(chunk)); }
         body=Buffer.concat(chunks);headers['Content-Type']='application/json';
       }
-      const response = await fetcher(backend.origin + '/api/staging/' + path + input.search, {
+      const response = await fetcher(backend.origin + '/api/staging/' + path + query, {
         method:req.method, headers, body, redirect:'error', signal:AbortSignal.timeout(55000),
       });
       const chunks=[];let bytes=0;
