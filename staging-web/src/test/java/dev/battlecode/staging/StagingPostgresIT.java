@@ -51,6 +51,12 @@ class StagingPostgresIT {
         var r=call("/api/staging/auth/login","POST",credentials,token(),true);assertEquals(200,r.statusCode(),r.body());
         String cookie=r.headers().allValues("Set-Cookie").getFirst();assertTrue(cookie.contains("Secure; HttpOnly; SameSite=Strict"));assertTrue(cookie.contains("Path=/;"));assertFalse(cookie.contains("Domain="));
     }
+    @Test void registrationEnforcesEightCharactersAtHttpBoundary()throws Exception{
+        for(var entry:Map.of("seven_user","1234567","eight_user","12345678","long_user","longer-than-eight").entrySet()){
+            String body=json.writeValueAsString(Map.of("username",entry.getKey(),"password",entry.getValue()));
+            assertEquals(entry.getValue().length()<8?400:201,call("/api/staging/auth/register","POST",body,token(),true).statusCode());
+        }
+    }
     @Test void smokeUnknownExecutionProxyAndCsrf()throws Exception{
         assertEquals(200,call("/healthz","GET",null,null,false).statusCode());assertEquals(200,call("/readyz","GET",null,null,false).statusCode());
         for(String route:List.of("battles","ranked/queue","tournaments","execute","worker","admin"))assertEquals(404,call("/api/staging/"+route,"POST","{}",null,true).statusCode());

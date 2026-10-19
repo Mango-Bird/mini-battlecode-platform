@@ -25,7 +25,7 @@ public final class AuthService {
         limits.put(key,new Window(window==null?now:window.since,window==null?1:window.count+1));
     }
     private static String username(String name){if(name==null||!name.matches("[a-z0-9_]{3,32}"))throw new IllegalArgumentException("Username: 3–32 lowercase letters, digits or underscores");return name;}
-    private static void password(String value){if(value==null||value.length()<15||value.getBytes(StandardCharsets.UTF_8).length>72||value.chars().anyMatch(Character::isISOControl))throw new IllegalArgumentException("Password: at least 15 characters, at most 72 UTF-8 bytes");
+    private static void password(String value){if(value==null||value.length()<8||value.getBytes(StandardCharsets.UTF_8).length>72||value.chars().anyMatch(Character::isISOControl))throw new IllegalArgumentException("Password: at least 8 characters, at most 72 UTF-8 bytes");
         try{StandardCharsets.UTF_8.newEncoder().onMalformedInput(java.nio.charset.CodingErrorAction.REPORT).encode(java.nio.CharBuffer.wrap(value));}catch(java.nio.charset.CharacterCodingException e){throw new IllegalArgumentException("Invalid password encoding");}
     }
     public User register(String name,String password){db.checkLease();username(name);password(password);
