@@ -47,6 +47,18 @@ public class PostgresPersistenceIT {
         assertThrows(IllegalArgumentException.class,()->auth.register("Uppercase",PASSWORD));assertThrows(IllegalArgumentException.class,()->auth.register("valid","short"));
         for(int i=0;i<10;i++)auth.throttle("127.0.0.1","login");assertThrows(AuthService.RateLimited.class,()->auth.throttle("127.0.0.1","login"));
     }
+    @Test void registrationPasswordBoundariesAndLegacyLogin(){
+        assertThrows(IllegalArgumentException.class,()->auth.register("short_user","1234567"));
+        assertEquals("eight_user",auth.register("eight_user","12345678").username());
+        assertEquals("long_user",auth.register("long_user","longer-than-eight").username());
+        assertThrows(IllegalArgumentException.class,()->auth.register("byte_limit","é".repeat(37)));
+        assertThrows(IllegalArgumentException.class,()->auth.register("control_user","12345678\n"));
+        assertThrows(IllegalArgumentException.class,()->auth.register("encoding_user","12345678\uD800"));
+        UUID legacy=UUID.randomUUID();
+        String hash=at.favre.lib.crypto.bcrypt.BCrypt.withDefaults().hashToString(12,"oldpass".toCharArray());
+        db.transaction(c->{try(var p=c.prepareStatement("INSERT INTO users(id,username,password_hash) VALUES (?,?,?)")){p.setObject(1,legacy);p.setString(2,"legacy_user");p.setString(3,hash);p.executeUpdate();}return null;});
+        var login=auth.login("legacy_user","oldpass");assertEquals(legacy,auth.require(login.token()).id());
+    }
     @Test void durableVersionsConcurrencyIdempotencyOwnershipAndDeletion()throws Exception{
         UUID a=auth.register("alice",PASSWORD).id(),b=auth.register("bob",PASSWORD).id(),request=UUID.randomUUID();
         var saved=bots.createOwned(a,request,"Exact",SOURCE);UUID id=saved.metadata().botId();

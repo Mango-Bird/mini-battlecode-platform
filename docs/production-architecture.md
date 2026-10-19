@@ -33,7 +33,7 @@ Preferred worker boundary is a dedicated Linux host/service with per-execution m
 
 ## Authentication and web policy
 
-Existing AuthService: bcrypt cost12, password15–72 UTF-8 bytes, random32-byte opaque session token, only token SHA-256 stored, 8h expiry, revocation and bounded sessions. Existing cookie is HTTP-loopback `battlecode_session`, HttpOnly, SameSite=Strict, `/api/local/`; it has no Secure attribute. Keep local behavior. Production requires a separate HTTPS transport and cookie adapter.
+Existing AuthService: bcrypt cost12, registration password minimum 8 characters and maximum 72 UTF-8 bytes, random32-byte opaque session token, only token SHA-256 stored, 8h expiry, revocation and bounded sessions. Existing-account login does not enforce the registration minimum. Existing cookie is HTTP-loopback `battlecode_session`, HttpOnly, SameSite=Strict, `/api/local/`; it has no Secure attribute. Keep local behavior. Production requires a separate HTTPS transport and cookie adapter.
 
 Target: host-only `__Host-battlecode_session; Secure; HttpOnly; SameSite=Lax; Path=/`, no Domain, rotation on login/privilege change, server expiry/revocation unchanged unless separately versioned. Use exact HTTPS Origin CORS echo with credentials, Vary: Origin, explicit methods/headers and no wildcard. Unsafe requests require a session-bound synchronizer token and Origin verification; login/register need a pre-auth bootstrap token to prevent login CSRF. Logout must be POST with CSRF and matching cookie deletion attributes. Revoke sessions on password rotation. No password reset/MFA/account recovery is currently implemented; define support policy before launch.
 
